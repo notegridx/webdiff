@@ -86,6 +86,13 @@ python -m http.server
 
 ---
 
+## Privacy / Security
+
+webdiff runs entirely in your browser.  
+No input data is sent, stored, or shared, and no tracking or analytics are used.
+
+---
+
 ## License
 
 MIT License  
