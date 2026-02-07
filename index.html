@@ -168,16 +168,6 @@
             outline-offset: 2px;
         }
 
-        #modeToggle[data-mode="chars"] {
-            border-color: color-mix(in oklab, var(--accent), var(--border) 40%);
-            box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 65%);
-        }
-
-        #modeToggle {
-            min-width: 128px;
-            text-align: center;
-        }
-
         .wrap {
             padding: 12px 14px 16px;
         }
@@ -342,10 +332,6 @@
                 </select>
             </label>
 
-            <button id="modeToggle" data-mode="lines" title="Diffモード切替">
-                文字単位に変更
-            </button>
-
             <label title="CRLF/LFを統一して比較します">
                 <input type="checkbox" id="normalizeEol" checked />
                 改行を正規化
@@ -360,7 +346,7 @@
         </div>
     </header>
 
-    <div class="app-desc">2つのテキストを貼り付けて差分を比較</div>
+    <div class="app-desc">2つのテキストを貼り付けて差分を比較（文字単位）</div>
 
     <div class="wrap">
         <div class="grid">
@@ -425,7 +411,7 @@
         themeSelect.addEventListener('change', () => saveTheme(themeSelect.value));
         loadTheme();
 
-        // ===== Diff App =====
+        // ===== Diff App (Chars only) =====
         const inLeft = document.getElementById('in-left');
         const inRight = document.getElementById('in-right');
         const hlLeft = document.getElementById('hl-left');
@@ -433,7 +419,6 @@
         const lnLeft = document.getElementById('ln-left');
         const lnRight = document.getElementById('ln-right');
 
-        const modeToggle = document.getElementById('modeToggle');
         const normalizeEol = document.getElementById('normalizeEol');
         const coalesceSpaces = document.getElementById('coalesceSpaces');
         const clearBtn = document.getElementById('clear');
@@ -449,30 +434,11 @@
                 .replaceAll("'", '&#39;');
         }
 
-        function getMode() {
-            return modeToggle.dataset.mode; // 'lines' | 'chars'
-        }
-
-        modeToggle.addEventListener('click', () => {
-            const next = getMode() === 'lines' ? 'chars' : 'lines';
-            modeToggle.dataset.mode = next;
-            modeToggle.textContent = next === 'lines' ? '文字単位に変更' : '行単位に変更';
-            scheduleUpdate();
-        });
-
         function preprocess(text) {
             let t = text ?? '';
             if (normalizeEol.checked) t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             if (coalesceSpaces.checked) t = t.replace(/[ \t]+/g, ' ');
             return t;
-        }
-
-        function chunkToHtmlRaw(chunk) {
-            let s = escapeHtml(chunk);
-            s = s.replace(/\n/g, '<br>');
-            if (s.endsWith('<br>')) s += '&nbsp;';
-            if (s.length === 0) s = '&nbsp;';
-            return s;
         }
 
         function chunkToHtmlPreserveIndent(chunk) {
@@ -486,7 +452,6 @@
         }
 
         function renderFromParts(parts, side) {
-            const isLines = getMode() === 'lines';
             let html = '';
 
             for (const p of parts) {
@@ -497,10 +462,7 @@
                 if (side === 'right' && isDel) continue;
 
                 const cls = isAdd ? 'add' : isDel ? 'del' : 'same';
-                const body = isLines
-                    ? chunkToHtmlRaw(p.value ?? '')
-                    : chunkToHtmlPreserveIndent(p.value ?? '');
-
+                const body = chunkToHtmlPreserveIndent(p.value ?? '');
                 html += `<span class="${cls}">${body}</span>`;
             }
             return html || '<span class="same">&nbsp;</span>';
@@ -544,9 +506,7 @@
             lnLeft.innerHTML = buildLineNumbers(left);
             lnRight.innerHTML = buildLineNumbers(right);
 
-            const parts = (getMode() === 'chars')
-                ? Diff.diffChars(left, right)
-                : Diff.diffLines(left, right);
+            const parts = Diff.diffChars(left, right);
 
             hlLeft.innerHTML = renderFromParts(parts, 'left');
             hlRight.innerHTML = renderFromParts(parts, 'right');
