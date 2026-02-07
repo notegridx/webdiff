@@ -1,0 +1,20 @@
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+
+# ===== Editor / IDE =====
+.vscode/
+.idea/
+*.iml
+
+# ===== Logs / temp =====
+*.log
+*.tmp
+
+# ===== Node / build (not used now, but future-proof) =====
+node_modules/
+dist/
+build/
+
+# ===== Local only =====
+.env
