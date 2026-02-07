@@ -3,27 +3,48 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Web Diff (Inline Highlight)</title>
+  <title>Web Diff</title>
 
   <!-- jsdiff -->
   <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
 
   <style>
+    /* ===== Theme tokens =====
+       We apply theme by setting: <html data-theme="light|dark">
+       Auto mode (OS follow) is handled by JS at startup and on OS change.
+    */
     :root {
-      /* Base (simple + readable light theme) */
-      --bg: #f6f8fa;        /* page background */
-      --panel: #ffffff;     /* surfaces */
-      --border: #d0d7de;    /* borders */
-      --text: #24292f;      /* main text */
-      --muted: #57606a;     /* secondary text */
+      /* Light (default) */
+      --bg: #f6f8fa;
+      --panel: #ffffff;
+      --border: #d0d7de;
+      --text: #24292f;
+      --muted: #57606a;
 
-      /* Diff highlight (soft + accessible) */
-      --add-bg: #e6ffec;    /* added */
-      --del-bg: #ffebe9;    /* removed */
+      --add-bg: #e6ffec;
+      --del-bg: #ffebe9;
       --same-bg: transparent;
 
-      /* Optional subtle line guide */
       --guide: #f0f2f4;
+
+      --focus: rgba(9, 105, 218, 0.20);
+    }
+
+    html[data-theme="dark"] {
+      /* Dark (simple + readable) */
+      --bg: #0b0d12;
+      --panel: #121623;
+      --border: #2a3147;
+      --text: #e6e8ef;
+      --muted: #9aa3b2;
+
+      --add-bg: rgba(46, 160, 67, 0.28);
+      --del-bg: rgba(248, 81, 73, 0.28);
+      --same-bg: transparent;
+
+      --guide: rgba(255, 255, 255, 0.06);
+
+      --focus: rgba(120, 160, 255, 0.25);
     }
 
     body {
@@ -96,7 +117,7 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: none; /* keep it simple */
+      box-shadow: none;
       min-height: 60vh;
       display: flex;
       flex-direction: column;
@@ -138,8 +159,8 @@
         "Liberation Mono", "Courier New", monospace;
       font-size: 13px;
       line-height: 1.55;
-      tab-size: 4;      /* keep in sync with JS TAB_SIZE */
-      white-space: pre; /* stable indentation rendering */
+      tab-size: 4;
+      white-space: pre;
       overflow: auto;
       background: transparent;
     }
@@ -148,8 +169,6 @@
       color: var(--text);
       pointer-events: none;
       z-index: 0;
-
-      /* Optional subtle horizontal guide (remove if you prefer fully flat) */
       background:
         linear-gradient(
           transparent 30px,
@@ -159,18 +178,17 @@
     }
 
     .input {
-      color: transparent;        /* hide actual text */
-      caret-color: var(--text);  /* show caret */
+      color: transparent;
+      caret-color: var(--text);
       outline: none;
       resize: none;
       z-index: 1;
     }
 
     .input::selection {
-      background: rgba(9, 105, 218, 0.20);
+      background: var(--focus);
     }
 
-    /* diff spans */
     .same { background: var(--same-bg); }
     .add  { background: var(--add-bg); }
     .del  { background: var(--del-bg); }
@@ -187,6 +205,15 @@
     <div class="title">Web Diff</div>
 
     <div class="controls">
+      <label title="Auto は OS（ライト/ダーク）に追従します">
+        テーマ
+        <select id="theme">
+          <option value="auto" selected>Auto</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+
       <label>
         モード
         <select id="mode">
@@ -236,6 +263,47 @@
   </div>
 
   <script>
+    // ===== Theme (Auto / Light / Dark) =====
+    const THEME_KEY = 'webdiff:theme'; // 'auto' | 'light' | 'dark'
+    const themeSelect = document.getElementById('theme');
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function applyTheme(mode) {
+      // mode: 'auto' | 'light' | 'dark'
+      const html = document.documentElement;
+      if (mode === 'light') {
+        html.setAttribute('data-theme', 'light');
+      } else if (mode === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+      } else {
+        // auto
+        html.setAttribute('data-theme', mql.matches ? 'dark' : 'light');
+      }
+    }
+
+    function loadTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      const mode = (saved === 'light' || saved === 'dark' || saved === 'auto') ? saved : 'auto';
+      themeSelect.value = mode;
+      applyTheme(mode);
+    }
+
+    function saveTheme(mode) {
+      localStorage.setItem(THEME_KEY, mode);
+      applyTheme(mode);
+    }
+
+    // OS theme change -> reflect only when Auto
+    mql.addEventListener('change', () => {
+      if (themeSelect.value === 'auto') applyTheme('auto');
+    });
+
+    themeSelect.addEventListener('change', () => saveTheme(themeSelect.value));
+
+    // Initialize theme ASAP
+    loadTheme();
+
+    // ===== Diff App =====
     const inLeft  = document.getElementById('in-left');
     const inRight = document.getElementById('in-right');
     const hlLeft  = document.getElementById('hl-left');
