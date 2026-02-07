@@ -243,13 +243,9 @@
                 </select>
             </label>
 
-            <label>
-                モード
-                <select id="mode">
-                    <option value="lines" selected>行単位</option>
-                    <option value="chars">文字単位</option>
-                </select>
-            </label>
+            <button id="modeToggle" data-mode="lines" title="Diffモード切替">
+                文字単位に変更
+            </button>
 
             <label title="CRLF/LFを統一して比較します">
                 <input type="checkbox" id="normalizeEol" checked />
@@ -340,7 +336,7 @@
         const hlLeft = document.getElementById('hl-left');
         const hlRight = document.getElementById('hl-right');
 
-        const mode = document.getElementById('mode');
+        const modeToggle = document.getElementById('modeToggle');
         const normalizeEol = document.getElementById('normalizeEol');
         const coalesceSpaces = document.getElementById('coalesceSpaces');
         const clearBtn = document.getElementById('clear');
@@ -356,6 +352,20 @@
                 .replaceAll('"', '&quot;')
                 .replaceAll("'", '&#39;');
         }
+
+        function getMode() {
+            return modeToggle.dataset.mode; // 'lines' | 'chars'
+        }
+
+        modeToggle.addEventListener('click', () => {
+            const current = getMode();
+            const next = current === 'lines' ? 'chars' : 'lines';
+
+            modeToggle.dataset.mode = next;
+            modeToggle.textContent = next === 'lines' ? '文字単位に変更' : '行単位に変更';
+
+            scheduleUpdate();
+        });
 
         function preprocess(text) {
             let t = text ?? '';
@@ -427,7 +437,7 @@
             const left = preprocess(inLeft.value);
             const right = preprocess(inRight.value);
 
-            const modeValue = mode.value;
+            const modeValue = getMode();
             const parts = (modeValue === 'chars')
                 ? Diff.diffChars(left, right)
                 : Diff.diffLines(left, right);
