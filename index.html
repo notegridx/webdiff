@@ -140,32 +140,39 @@
       color: var(--muted);
     }
 
-    /* ===== Inline highlight editor ===== */
-    .editor {
+    /* ===== Inline highlight editor (auto-grow) ===== */
+    .editor{
+      display: grid;          /* overlay by grid */
       position: relative;
-      flex: 1;
-      min-height: 0;
     }
 
     .highlight,
-    .input {
-      position: absolute;
-      inset: 0;
+    .input{
+      grid-area: 1 / 1;       /* same cell */
       margin: 0;
       padding: 12px 12px 14px;
       border: 0;
       border-radius: 0;
+      box-sizing: border-box;
+      width: 100%;
+
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         "Liberation Mono", "Courier New", monospace;
       font-size: 13px;
       line-height: 1.55;
       tab-size: 4;
       white-space: pre;
-      overflow: auto;
+
+      /* grow vertically; do NOT scroll vertically inside */
+      overflow-y: hidden;
+
+      /* allow horizontal scroll for long lines */
+      overflow-x: auto;
+
       background: transparent;
     }
 
-    .highlight {
+    .highlight{
       color: var(--text);
       pointer-events: none;
       z-index: 0;
@@ -177,7 +184,7 @@
         ) 0 0 / 100% 1.55em repeat-y;
     }
 
-    .input {
+    .input{
       color: transparent;
       caret-color: var(--text);
       outline: none;
@@ -374,6 +381,14 @@
       return html || '<span class="same">&nbsp;</span>';
     }
 
+    function autoGrow(inputEl, highlightEl) {
+      // reset first to get accurate scrollHeight
+      inputEl.style.height = 'auto';
+      const h = inputEl.scrollHeight;
+      inputEl.style.height = h + 'px';
+      highlightEl.style.height = h + 'px';
+    }
+
     // ---- Diff + Render (debounced, IME-safe) ----
     let timer = null;
     let composing = false;
@@ -396,12 +411,16 @@
       hlLeft.innerHTML = renderFromParts(parts, 'left');
       hlRight.innerHTML = renderFromParts(parts, 'right');
 
+      // auto-grow after rendering
+      autoGrow(inLeft, hlLeft);
+      autoGrow(inRight, hlRight);
+
+      // sync horizontal scroll only
       syncScroll(inLeft, hlLeft);
       syncScroll(inRight, hlRight);
     }
 
     function syncScroll(input, highlight) {
-      highlight.scrollTop = input.scrollTop;
       highlight.scrollLeft = input.scrollLeft;
     }
 
