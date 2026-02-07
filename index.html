@@ -1,462 +1,475 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Web Diff</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Web Diff</title>
 
-  <!-- jsdiff -->
-  <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
+    <!-- jsdiff -->
+    <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
 
-  <style>
-    /* ===== Theme tokens =====
+    <style>
+        /* ===== Theme tokens =====
        We apply theme by setting: <html data-theme="light|dark">
        Auto mode (OS follow) is handled by JS at startup and on OS change.
     */
-    :root {
-      /* Light (default) */
-      --bg: #f6f8fa;
-      --panel: #ffffff;
-      --border: #d0d7de;
-      --text: #24292f;
-      --muted: #57606a;
+        :root {
+            /* Light (default) */
+            --bg: #f6f8fa;
+            --panel: #ffffff;
+            --border: #d0d7de;
+            --text: #24292f;
+            --muted: #57606a;
 
-      --add-bg: #dff7e7;
-      --del-bg: #ffe0e0;
-      --add-bd: #2da44e;
-      --del-bd: #cf222e;
-      --same-bg: transparent;
+            --add-bg: #dff7e7;
+            --del-bg: #ffe0e0;
+            --add-bd: #2da44e;
+            --del-bd: #cf222e;
+            --same-bg: transparent;
 
-      --guide: #f0f2f4;
+            --guide: #f0f2f4;
 
-      --focus: rgba(9, 105, 218, 0.20);
-    }
+            --focus: rgba(9, 105, 218, 0.20);
+        }
 
-    html[data-theme="dark"] {
-      /* Dark (simple + readable) */
-      --bg: #0b0d12;
-      --panel: #121623;
-      --border: #2a3147;
-      --text: #e6e8ef;
-      --muted: #9aa3b2;
+        html[data-theme="dark"] {
+            /* Dark (simple + readable) */
+            --bg: #0b0d12;
+            --panel: #121623;
+            --border: #2a3147;
+            --text: #e6e8ef;
+            --muted: #9aa3b2;
 
-  --add-bg: rgba(46, 160, 67, 0.35);
-  --del-bg: rgba(248, 81, 73, 0.35);
-  --add-bd: rgba(46, 160, 67, 0.75);
-  --del-bd: rgba(248, 81, 73, 0.75);
-      --same-bg: transparent;
+            --add-bg: rgba(46, 160, 67, 0.35);
+            --del-bg: rgba(248, 81, 73, 0.35);
+            --add-bd: rgba(46, 160, 67, 0.75);
+            --del-bd: rgba(248, 81, 73, 0.75);
+            --same-bg: transparent;
 
-      --guide: rgba(255, 255, 255, 0.06);
+            --guide: rgba(255, 255, 255, 0.06);
 
-      --focus: rgba(120, 160, 255, 0.25);
-    }
+            --focus: rgba(120, 160, 255, 0.25);
+        }
 
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
-        "Hiragino Kaku Gothic ProN", "Noto Sans JP", Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+                "Hiragino Kaku Gothic ProN", "Noto Sans JP", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
 
-    header {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--panel);
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
+        header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
 
-    header .title {
-      font-weight: 700;
-      letter-spacing: 0.2px;
-    }
+        header .title {
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
 
-    header .controls {
-      margin-left: auto;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-      color: var(--muted);
-      font-size: 13px;
-    }
+        header .controls {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 13px;
+        }
 
-    .controls label {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      cursor: pointer;
-      user-select: none;
-    }
+        .controls label {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
 
-    .controls select,
-    .controls button {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 13px;
-    }
+        .controls select,
+        .controls button {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
 
-    .controls button {
-      cursor: pointer;
-    }
+        .controls button {
+            cursor: pointer;
+        }
 
-    .wrap {
-      padding: 12px 14px 16px;
-    }
+        .wrap {
+            padding: 12px 14px 16px;
+        }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
 
-    .col {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: none;
-      min-height: 60vh;
-      display: flex;
-      flex-direction: column;
-    }
+        .col {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: none;
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-    .col .col-hd {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      background: var(--panel);
-    }
+        .col .col-hd {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            background: var(--panel);
+        }
 
-    .col .hint {
-      font-size: 12px;
-      color: var(--muted);
-    }
+        .col .hint {
+            font-size: 12px;
+            color: var(--muted);
+        }
 
-    /* ===== Inline highlight editor (auto-grow) ===== */
-    .editor{
-      display: grid;          /* overlay by grid */
-      position: relative;
-    }
+        /* ===== Inline highlight editor (auto-grow) ===== */
+        .editor {
+            display: grid;
+            /* overlay by grid */
+            position: relative;
+        }
 
-    .highlight,
-    .input{
-      grid-area: 1 / 1;       /* same cell */
-      margin: 0;
-      padding: 12px 12px 14px;
-      border: 0;
-      border-radius: 0;
-      box-sizing: border-box;
-      width: 100%;
+        .highlight,
+        .input {
+            grid-area: 1 / 1;
+            /* same cell */
+            margin: 0;
+            padding: 12px 12px 14px;
+            border: 0;
+            border-radius: 0;
+            box-sizing: border-box;
+            width: 100%;
 
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        "Liberation Mono", "Courier New", monospace;
-      font-size: 13px;
-      line-height: 1.55;
-      tab-size: 4;
-      white-space: pre;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.55;
+            tab-size: 4;
+            white-space: pre;
 
-      /* grow vertically; do NOT scroll vertically inside */
-      overflow-y: hidden;
+            /* grow vertically; do NOT scroll vertically inside */
+            overflow-y: hidden;
 
-      /* allow horizontal scroll for long lines */
-      overflow-x: auto;
+            /* allow horizontal scroll for long lines */
+            overflow-x: auto;
 
-      background: transparent;
-    }
+            background: transparent;
+        }
 
-    .highlight{
-      color: var(--text);
-      pointer-events: none;
-      z-index: 0;
-      background:
-        linear-gradient(
-          transparent 30px,
-          var(--guide) 31px,
-          transparent 32px
-        ) 0 0 / 100% 1.55em repeat-y;
-    }
+        .highlight {
+            color: var(--text);
+            pointer-events: none;
+            z-index: 0;
+            background:
+                linear-gradient(transparent 30px,
+                    var(--guide) 31px,
+                    transparent 32px) 0 0 / 100% 1.55em repeat-y;
+        }
 
-    .input{
-      color: transparent;
-      caret-color: var(--text);
-      outline: none;
-      resize: none;
-      z-index: 1;
-    }
+        .input {
+            color: transparent;
+            caret-color: var(--text);
+            outline: none;
+            resize: none;
+            z-index: 1;
+        }
 
-    .input::selection {
-      background: var(--focus);
-    }
+        .input::selection {
+            background: var(--focus);
+        }
 
-    .same { background: var(--same-bg); }
-    .add  {
+        .same {
+            background: var(--same-bg);
+        }
+
+        .add {
             background: var(--add-bg);
             box-shadow: inset 2px 0 0 var(--add-bd);
-    }
-    .del  {
+        }
+
+        .del {
             background: var(--del-bg);
             box-shadow: inset 2px 0 0 var(--del-bd);
-    }
+        }
 
-    @media (max-width: 980px) {
-      .grid { grid-template-columns: 1fr; }
-      .col { min-height: 40vh; }
-    }
-  </style>
+        @media (max-width: 980px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .col {
+                min-height: 40vh;
+            }
+        }
+    </style>
 </head>
 
 <body>
-  <header>
-    <div class="title">Web Diff</div>
+    <header>
+        <div class="title">Web Diff</div>
 
-    <div class="controls">
-      <label title="Auto は OS（ライト/ダーク）に追従します">
-        テーマ
-        <select id="theme">
-          <option value="auto" selected>Auto</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-        </select>
-      </label>
+        <div class="controls">
+            <label title="Auto は OS（ライト/ダーク）に追従します">
+                テーマ
+                <select id="theme">
+                    <option value="auto" selected>Auto</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </label>
 
-      <label>
-        モード
-        <select id="mode">
-          <option value="lines" selected>行単位</option>
-          <option value="chars">文字単位</option>
-        </select>
-      </label>
+            <label>
+                モード
+                <select id="mode">
+                    <option value="lines" selected>行単位</option>
+                    <option value="chars">文字単位</option>
+                </select>
+            </label>
 
-      <label title="CRLF/LFを統一して比較します">
-        <input type="checkbox" id="normalizeEol" checked />
-        改行を正規化
-      </label>
+            <label title="CRLF/LFを統一して比較します">
+                <input type="checkbox" id="normalizeEol" checked />
+                改行を正規化
+            </label>
 
-      <label title="連続空白の差分を無視（比較用に正規化します）">
-        <input type="checkbox" id="coalesceSpaces" />
-        空白をゆるく無視
-      </label>
+            <label title="連続空白の差分を無視（比較用に正規化します）">
+                <input type="checkbox" id="coalesceSpaces" />
+                空白をゆるく無視
+            </label>
 
-      <button id="clear">両方クリア</button>
+            <button id="clear">両方クリア</button>
+        </div>
+    </header>
+
+    <div class="wrap">
+        <div class="grid">
+            <section class="col">
+                <div class="col-hd">
+                    <div>Left</div>
+                    <div class="hint">ここに貼る（即diff）</div>
+                </div>
+                <div class="editor">
+                    <pre class="highlight" id="hl-left"></pre>
+                    <textarea class="input" id="in-left" spellcheck="false" autocomplete="off"
+                        autocapitalize="off"></textarea>
+                </div>
+            </section>
+
+            <section class="col">
+                <div class="col-hd">
+                    <div>Right</div>
+                    <div class="hint">ここに貼る（即diff）</div>
+                </div>
+                <div class="editor">
+                    <pre class="highlight" id="hl-right"></pre>
+                    <textarea class="input" id="in-right" spellcheck="false" autocomplete="off"
+                        autocapitalize="off"></textarea>
+                </div>
+            </section>
+        </div>
     </div>
-  </header>
 
-  <div class="wrap">
-    <div class="grid">
-      <section class="col">
-        <div class="col-hd">
-          <div>Left</div>
-          <div class="hint">ここに貼る（即diff）</div>
-        </div>
-        <div class="editor">
-          <pre class="highlight" id="hl-left"></pre>
-          <textarea class="input" id="in-left" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
-        </div>
-      </section>
+    <script>
+        // ===== Theme (Auto / Light / Dark) =====
+        const THEME_KEY = 'webdiff:theme'; // 'auto' | 'light' | 'dark'
+        const themeSelect = document.getElementById('theme');
+        const mql = window.matchMedia('(prefers-color-scheme: dark)');
 
-      <section class="col">
-        <div class="col-hd">
-          <div>Right</div>
-          <div class="hint">ここに貼る（即diff）</div>
-        </div>
-        <div class="editor">
-          <pre class="highlight" id="hl-right"></pre>
-          <textarea class="input" id="in-right" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
-        </div>
-      </section>
-    </div>
-  </div>
+        function applyTheme(mode) {
+            // mode: 'auto' | 'light' | 'dark'
+            const html = document.documentElement;
+            if (mode === 'light') {
+                html.setAttribute('data-theme', 'light');
+            } else if (mode === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+            } else {
+                // auto
+                html.setAttribute('data-theme', mql.matches ? 'dark' : 'light');
+            }
+        }
 
-  <script>
-    // ===== Theme (Auto / Light / Dark) =====
-    const THEME_KEY = 'webdiff:theme'; // 'auto' | 'light' | 'dark'
-    const themeSelect = document.getElementById('theme');
-    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+        function loadTheme() {
+            const saved = localStorage.getItem(THEME_KEY);
+            const mode = (saved === 'light' || saved === 'dark' || saved === 'auto') ? saved : 'auto';
+            themeSelect.value = mode;
+            applyTheme(mode);
+        }
 
-    function applyTheme(mode) {
-      // mode: 'auto' | 'light' | 'dark'
-      const html = document.documentElement;
-      if (mode === 'light') {
-        html.setAttribute('data-theme', 'light');
-      } else if (mode === 'dark') {
-        html.setAttribute('data-theme', 'dark');
-      } else {
-        // auto
-        html.setAttribute('data-theme', mql.matches ? 'dark' : 'light');
-      }
-    }
+        function saveTheme(mode) {
+            localStorage.setItem(THEME_KEY, mode);
+            applyTheme(mode);
+        }
 
-    function loadTheme() {
-      const saved = localStorage.getItem(THEME_KEY);
-      const mode = (saved === 'light' || saved === 'dark' || saved === 'auto') ? saved : 'auto';
-      themeSelect.value = mode;
-      applyTheme(mode);
-    }
+        // OS theme change -> reflect only when Auto
+        mql.addEventListener('change', () => {
+            if (themeSelect.value === 'auto') applyTheme('auto');
+        });
 
-    function saveTheme(mode) {
-      localStorage.setItem(THEME_KEY, mode);
-      applyTheme(mode);
-    }
+        themeSelect.addEventListener('change', () => saveTheme(themeSelect.value));
 
-    // OS theme change -> reflect only when Auto
-    mql.addEventListener('change', () => {
-      if (themeSelect.value === 'auto') applyTheme('auto');
-    });
+        // Initialize theme ASAP
+        loadTheme();
 
-    themeSelect.addEventListener('change', () => saveTheme(themeSelect.value));
+        // ===== Diff App =====
+        const inLeft = document.getElementById('in-left');
+        const inRight = document.getElementById('in-right');
+        const hlLeft = document.getElementById('hl-left');
+        const hlRight = document.getElementById('hl-right');
 
-    // Initialize theme ASAP
-    loadTheme();
+        const mode = document.getElementById('mode');
+        const normalizeEol = document.getElementById('normalizeEol');
+        const coalesceSpaces = document.getElementById('coalesceSpaces');
+        const clearBtn = document.getElementById('clear');
 
-    // ===== Diff App =====
-    const inLeft  = document.getElementById('in-left');
-    const inRight = document.getElementById('in-right');
-    const hlLeft  = document.getElementById('hl-left');
-    const hlRight = document.getElementById('hl-right');
+        // CSS tab-size と合わせる
+        const TAB_SIZE = 4;
 
-    const mode = document.getElementById('mode');
-    const normalizeEol = document.getElementById('normalizeEol');
-    const coalesceSpaces = document.getElementById('coalesceSpaces');
-    const clearBtn = document.getElementById('clear');
+        function escapeHtml(s) {
+            return s
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
 
-    // CSS tab-size と合わせる
-    const TAB_SIZE = 4;
+        function preprocess(text) {
+            let t = text ?? '';
+            if (normalizeEol.checked) {
+                t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            }
+            if (coalesceSpaces.checked) {
+                t = t.replace(/[ \t]+/g, ' ');
+            }
+            return t;
+        }
 
-    function escapeHtml(s) {
-      return s
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-    }
+        // 行頭の空白/タブだけを潰れないように &nbsp; 化して、改行は <br> にする
+        function chunkToHtmlPreserveIndent(chunk) {
+            let s = escapeHtml(chunk);
 
-    function preprocess(text) {
-      let t = text ?? '';
-      if (normalizeEol.checked) {
-        t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-      }
-      if (coalesceSpaces.checked) {
-        t = t.replace(/[ \t]+/g, ' ');
-      }
-      return t;
-    }
+            // タブをスペースに展開（&nbsp;化と整合）
+            s = s.replace(/\t/g, ' '.repeat(TAB_SIZE));
 
-    // 行頭の空白/タブだけを潰れないように &nbsp; 化して、改行は <br> にする
-    function chunkToHtmlPreserveIndent(chunk) {
-      let s = escapeHtml(chunk);
+            // 行頭の連続スペースを &nbsp; に（行頭だけ）
+            // (^|<br>) の直後のスペース列を対象にする
+            s = s.replace(/(^|<br>)( +)/g, (m, p1, p2) => p1 + p2.replace(/ /g, '&nbsp;'));
 
-      // タブをスペースに展開（&nbsp;化と整合）
-      s = s.replace(/\t/g, ' '.repeat(TAB_SIZE));
+            // 改行を <br> に
+            s = s.replace(/\n/g, '<br>');
 
-      // 行頭の連続スペースを &nbsp; に（行頭だけ）
-      // (^|<br>) の直後のスペース列を対象にする
-      s = s.replace(/(^|<br>)( +)/g, (m, p1, p2) => p1 + p2.replace(/ /g, '&nbsp;'));
+            // 末尾が改行で終わる場合の「最後の空行」を可視化
+            if (s.endsWith('<br>')) s += '&nbsp;';
 
-      // 改行を <br> に
-      s = s.replace(/\n/g, '<br>');
+            if (s.length === 0) s = '&nbsp;';
+            return s;
+        }
 
-      // 末尾が改行で終わる場合の「最後の空行」を可視化
-      if (s.endsWith('<br>')) s += '&nbsp;';
+        function renderFromParts(parts, side) {
+            let html = '';
+            for (const p of parts) {
+                const isAdd = !!p.added;
+                const isDel = !!p.removed;
 
-      if (s.length === 0) s = '&nbsp;';
-      return s;
-    }
+                // left: additions hide, right: deletions hide
+                if (side === 'left' && isAdd) continue;
+                if (side === 'right' && isDel) continue;
 
-    function renderFromParts(parts, side) {
-      let html = '';
-      for (const p of parts) {
-        const isAdd = !!p.added;
-        const isDel = !!p.removed;
+                const cls = isAdd ? 'add' : isDel ? 'del' : 'same';
+                html += `<span class="${cls}">${chunkToHtmlPreserveIndent(p.value ?? '')}</span>`;
+            }
+            return html || '<span class="same">&nbsp;</span>';
+        }
 
-        // left: additions hide, right: deletions hide
-        if (side === 'left'  && isAdd) continue;
-        if (side === 'right' && isDel) continue;
+        function autoGrow(inputEl, highlightEl) {
+            // reset first to get accurate scrollHeight
+            inputEl.style.height = 'auto';
+            const h = inputEl.scrollHeight;
+            inputEl.style.height = h + 'px';
+            highlightEl.style.height = h + 'px';
+        }
 
-        const cls = isAdd ? 'add' : isDel ? 'del' : 'same';
-        html += `<span class="${cls}">${chunkToHtmlPreserveIndent(p.value ?? '')}</span>`;
-      }
-      return html || '<span class="same">&nbsp;</span>';
-    }
+        // ---- Diff + Render (debounced, IME-safe) ----
+        let timer = null;
+        let composing = false;
 
-    function autoGrow(inputEl, highlightEl) {
-      // reset first to get accurate scrollHeight
-      inputEl.style.height = 'auto';
-      const h = inputEl.scrollHeight;
-      inputEl.style.height = h + 'px';
-      highlightEl.style.height = h + 'px';
-    }
+        function scheduleUpdate() {
+            if (composing) return;
+            clearTimeout(timer);
+            timer = setTimeout(updateDiff, 120);
+        }
 
-    // ---- Diff + Render (debounced, IME-safe) ----
-    let timer = null;
-    let composing = false;
+        function updateDiff() {
+            const left = preprocess(inLeft.value);
+            const right = preprocess(inRight.value);
 
-    function scheduleUpdate() {
-      if (composing) return;
-      clearTimeout(timer);
-      timer = setTimeout(updateDiff, 120);
-    }
+            const modeValue = mode.value;
+            const parts = (modeValue === 'chars')
+                ? Diff.diffChars(left, right)
+                : Diff.diffLines(left, right);
 
-    function updateDiff() {
-      const left = preprocess(inLeft.value);
-      const right = preprocess(inRight.value);
+            hlLeft.innerHTML = renderFromParts(parts, 'left');
+            hlRight.innerHTML = renderFromParts(parts, 'right');
 
-      const modeValue = mode.value;
-      const parts = (modeValue === 'chars')
-        ? Diff.diffChars(left, right)
-        : Diff.diffLines(left, right);
+            // auto-grow after rendering
+            autoGrow(inLeft, hlLeft);
+            autoGrow(inRight, hlRight);
 
-      hlLeft.innerHTML = renderFromParts(parts, 'left');
-      hlRight.innerHTML = renderFromParts(parts, 'right');
+            // sync horizontal scroll only
+            syncScroll(inLeft, hlLeft);
+            syncScroll(inRight, hlRight);
+        }
 
-      // auto-grow after rendering
-      autoGrow(inLeft, hlLeft);
-      autoGrow(inRight, hlRight);
+        function syncScroll(input, highlight) {
+            highlight.scrollLeft = input.scrollLeft;
+        }
 
-      // sync horizontal scroll only
-      syncScroll(inLeft, hlLeft);
-      syncScroll(inRight, hlRight);
-    }
+        inLeft.addEventListener('scroll', () => syncScroll(inLeft, hlLeft));
+        inRight.addEventListener('scroll', () => syncScroll(inRight, hlRight));
 
-    function syncScroll(input, highlight) {
-      highlight.scrollLeft = input.scrollLeft;
-    }
+        for (const el of [inLeft, inRight]) {
+            el.addEventListener('input', scheduleUpdate);
+            el.addEventListener('paste', scheduleUpdate);
 
-    inLeft.addEventListener('scroll',  () => syncScroll(inLeft, hlLeft));
-    inRight.addEventListener('scroll', () => syncScroll(inRight, hlRight));
+            el.addEventListener('compositionstart', () => { composing = true; });
+            el.addEventListener('compositionend', () => { composing = false; scheduleUpdate(); });
+        }
 
-    for (const el of [inLeft, inRight]) {
-      el.addEventListener('input', scheduleUpdate);
-      el.addEventListener('paste', scheduleUpdate);
+        mode.addEventListener('change', scheduleUpdate);
+        normalizeEol.addEventListener('change', scheduleUpdate);
+        coalesceSpaces.addEventListener('change', scheduleUpdate);
 
-      el.addEventListener('compositionstart', () => { composing = true; });
-      el.addEventListener('compositionend',   () => { composing = false; scheduleUpdate(); });
-    }
+        clearBtn.addEventListener('click', () => {
+            inLeft.value = '';
+            inRight.value = '';
+            scheduleUpdate();
+            inLeft.focus();
+        });
 
-    mode.addEventListener('change', scheduleUpdate);
-    normalizeEol.addEventListener('change', scheduleUpdate);
-    coalesceSpaces.addEventListener('change', scheduleUpdate);
-
-    clearBtn.addEventListener('click', () => {
-      inLeft.value = '';
-      inRight.value = '';
-      scheduleUpdate();
-      inLeft.focus();
-    });
-
-    updateDiff();
-  </script>
+        updateDiff();
+    </script>
 </body>
+
 </html>
