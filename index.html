@@ -56,10 +56,17 @@
             --shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.35);
         }
 
-        html[data-theme="light"] { color-scheme: light; }
-        html[data-theme="dark"] { color-scheme: dark; }
+        html[data-theme="light"] {
+            color-scheme: light;
+        }
 
-        * { box-sizing: border-box; }
+        html[data-theme="dark"] {
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
@@ -150,7 +157,9 @@
             background: color-mix(in oklab, var(--panel), var(--text) 3%);
         }
 
-        .controls button:active { transform: translateY(1px); }
+        .controls button:active {
+            transform: translateY(1px);
+        }
 
         .controls select:focus-visible,
         .controls button:focus-visible,
@@ -169,7 +178,9 @@
             text-align: center;
         }
 
-        .wrap { padding: 12px 14px 16px; }
+        .wrap {
+            padding: 12px 14px 16px;
+        }
 
         .grid {
             display: grid;
@@ -215,7 +226,9 @@
             overflow: hidden;
         }
 
-        html[data-theme="dark"] .lines { opacity: 0.75; }
+        html[data-theme="dark"] .lines {
+            opacity: 0.75;
+        }
 
         .lines span {
             display: block;
@@ -226,7 +239,8 @@
         .pane {
             display: grid;
             position: relative;
-            min-width: 0; /* allow horizontal scroll inside */
+            min-width: 0;
+            /* allow horizontal scroll inside */
         }
 
         .highlight,
@@ -270,11 +284,23 @@
             z-index: 1;
         }
 
-        .input::selection { background: var(--focus); }
+        .input::selection {
+            background: var(--focus);
+        }
 
-        .same { background: var(--same-bg); }
-        .add { background: var(--add-bg); box-shadow: inset 2px 0 0 var(--add-bd); }
-        .del { background: var(--del-bg); box-shadow: inset 2px 0 0 var(--del-bd); }
+        .same {
+            background: var(--same-bg);
+        }
+
+        .add {
+            background: var(--add-bg);
+            box-shadow: inset 2px 0 0 var(--add-bd);
+        }
+
+        .del {
+            background: var(--del-bg);
+            box-shadow: inset 2px 0 0 var(--del-bd);
+        }
 
         .footer {
             padding: 10px 14px 14px;
@@ -287,11 +313,18 @@
             text-decoration: none;
         }
 
-        .footer a:hover { text-decoration: underline; }
+        .footer a:hover {
+            text-decoration: underline;
+        }
 
         @media (max-width: 980px) {
-            .grid { grid-template-columns: 1fr; }
-            .col { min-height: 40vh; }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .col {
+                min-height: 40vh;
+            }
         }
     </style>
 </head>
@@ -302,7 +335,6 @@
 
         <div class="controls">
             <label title="Auto は OS（ライト/ダーク）に追従します">
-                テーマ
                 <select id="theme">
                     <option value="auto" selected>Auto</option>
                     <option value="light">Light</option>
@@ -435,6 +467,14 @@
             return t;
         }
 
+        function chunkToHtmlRaw(chunk) {
+            let s = escapeHtml(chunk);
+            s = s.replace(/\n/g, '<br>');
+            if (s.endsWith('<br>')) s += '&nbsp;';
+            if (s.length === 0) s = '&nbsp;';
+            return s;
+        }
+
         function chunkToHtmlPreserveIndent(chunk) {
             let s = escapeHtml(chunk);
             s = s.replace(/\t/g, ' '.repeat(TAB_SIZE));
@@ -446,7 +486,9 @@
         }
 
         function renderFromParts(parts, side) {
+            const isLines = getMode() === 'lines';
             let html = '';
+
             for (const p of parts) {
                 const isAdd = !!p.added;
                 const isDel = !!p.removed;
@@ -455,7 +497,11 @@
                 if (side === 'right' && isDel) continue;
 
                 const cls = isAdd ? 'add' : isDel ? 'del' : 'same';
-                html += `<span class="${cls}">${chunkToHtmlPreserveIndent(p.value ?? '')}</span>`;
+                const body = isLines
+                    ? chunkToHtmlRaw(p.value ?? '')
+                    : chunkToHtmlPreserveIndent(p.value ?? '');
+
+                html += `<span class="${cls}">${body}</span>`;
             }
             return html || '<span class="same">&nbsp;</span>';
         }
