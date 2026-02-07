@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Web Diff (Inline Highlight)</title>
+
+  <!-- jsdiff -->
+  <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
+
+  <style>
+    :root {
+      /* Base (simple + readable light theme) */
+      --bg: #f6f8fa;        /* page background */
+      --panel: #ffffff;     /* surfaces */
+      --border: #d0d7de;    /* borders */
+      --text: #24292f;      /* main text */
+      --muted: #57606a;     /* secondary text */
+
+      /* Diff highlight (soft + accessible) */
+      --add-bg: #e6ffec;    /* added */
+      --del-bg: #ffebe9;    /* removed */
+      --same-bg: transparent;
+
+      /* Optional subtle line guide */
+      --guide: #f0f2f4;
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+        "Hiragino Kaku Gothic ProN", "Noto Sans JP", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    header .title {
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    header .controls {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .controls label {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .controls select,
+    .controls button {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .controls button {
+      cursor: pointer;
+    }
+
+    .wrap {
+      padding: 12px 14px 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .col {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: none; /* keep it simple */
+      min-height: 60vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .col .col-hd {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+    }
+
+    .col .hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ===== Inline highlight editor ===== */
+    .editor {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .highlight,
+    .input {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      padding: 12px 12px 14px;
+      border: 0;
+      border-radius: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      tab-size: 4;      /* keep in sync with JS TAB_SIZE */
+      white-space: pre; /* stable indentation rendering */
+      overflow: auto;
+      background: transparent;
+    }
+
+    .highlight {
+      color: var(--text);
+      pointer-events: none;
+      z-index: 0;
+
+      /* Optional subtle horizontal guide (remove if you prefer fully flat) */
+      background:
+        linear-gradient(
+          transparent 30px,
+          var(--guide) 31px,
+          transparent 32px
+        ) 0 0 / 100% 1.55em repeat-y;
+    }
+
+    .input {
+      color: transparent;        /* hide actual text */
+      caret-color: var(--text);  /* show caret */
+      outline: none;
+      resize: none;
+      z-index: 1;
+    }
+
+    .input::selection {
+      background: rgba(9, 105, 218, 0.20);
+    }
+
+    /* diff spans */
+    .same { background: var(--same-bg); }
+    .add  { background: var(--add-bg); }
+    .del  { background: var(--del-bg); }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .col { min-height: 40vh; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="title">Web Diff</div>
+
+    <div class="controls">
+      <label>
+        モード
+        <select id="mode">
+          <option value="lines" selected>行単位</option>
+          <option value="chars">文字単位</option>
+        </select>
+      </label>
+
+      <label title="CRLF/LFを統一して比較します">
+        <input type="checkbox" id="normalizeEol" checked />
+        改行を正規化
+      </label>
+
+      <label title="連続空白の差分を無視（比較用に正規化します）">
+        <input type="checkbox" id="coalesceSpaces" />
+        空白をゆるく無視
+      </label>
+
+      <button id="clear">両方クリア</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <section class="col">
+        <div class="col-hd">
+          <div>Left</div>
+          <div class="hint">ここに貼る（即diff）</div>
+        </div>
+        <div class="editor">
+          <pre class="highlight" id="hl-left"></pre>
+          <textarea class="input" id="in-left" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </div>
+      </section>
+
+      <section class="col">
+        <div class="col-hd">
+          <div>Right</div>
+          <div class="hint">ここに貼る（即diff）</div>
+        </div>
+        <div class="editor">
+          <pre class="highlight" id="hl-right"></pre>
+          <textarea class="input" id="in-right" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const inLeft  = document.getElementById('in-left');
+    const inRight = document.getElementById('in-right');
+    const hlLeft  = document.getElementById('hl-left');
+    const hlRight = document.getElementById('hl-right');
+
+    const mode = document.getElementById('mode');
+    const normalizeEol = document.getElementById('normalizeEol');
+    const coalesceSpaces = document.getElementById('coalesceSpaces');
+    const clearBtn = document.getElementById('clear');
+
+    // CSS tab-size と合わせる
+    const TAB_SIZE = 4;
+
+    function escapeHtml(s) {
+      return s
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function preprocess(text) {
+      let t = text ?? '';
+      if (normalizeEol.checked) {
+        t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      }
+      if (coalesceSpaces.checked) {
+        t = t.replace(/[ \t]+/g, ' ');
+      }
+      return t;
+    }
+
+    // 行頭の空白/タブだけを潰れないように &nbsp; 化して、改行は <br> にする
+    function chunkToHtmlPreserveIndent(chunk) {
+      let s = escapeHtml(chunk);
+
+      // タブをスペースに展開（&nbsp;化と整合）
+      s = s.replace(/\t/g, ' '.repeat(TAB_SIZE));
+
+      // 行頭の連続スペースを &nbsp; に（行頭だけ）
+      // (^|<br>) の直後のスペース列を対象にする
+      s = s.replace(/(^|<br>)( +)/g, (m, p1, p2) => p1 + p2.replace(/ /g, '&nbsp;'));
+
+      // 改行を <br> に
+      s = s.replace(/\n/g, '<br>');
+
+      // 末尾が改行で終わる場合の「最後の空行」を可視化
+      if (s.endsWith('<br>')) s += '&nbsp;';
+
+      if (s.length === 0) s = '&nbsp;';
+      return s;
+    }
+
+    function renderFromParts(parts, side) {
+      let html = '';
+      for (const p of parts) {
+        const isAdd = !!p.added;
+        const isDel = !!p.removed;
+
+        // left: additions hide, right: deletions hide
+        if (side === 'left'  && isAdd) continue;
+        if (side === 'right' && isDel) continue;
+
+        const cls = isAdd ? 'add' : isDel ? 'del' : 'same';
+        html += `<span class="${cls}">${chunkToHtmlPreserveIndent(p.value ?? '')}</span>`;
+      }
+      return html || '<span class="same">&nbsp;</span>';
+    }
+
+    // ---- Diff + Render (debounced, IME-safe) ----
+    let timer = null;
+    let composing = false;
+
+    function scheduleUpdate() {
+      if (composing) return;
+      clearTimeout(timer);
+      timer = setTimeout(updateDiff, 120);
+    }
+
+    function updateDiff() {
+      const left = preprocess(inLeft.value);
+      const right = preprocess(inRight.value);
+
+      const modeValue = mode.value;
+      const parts = (modeValue === 'chars')
+        ? Diff.diffChars(left, right)
+        : Diff.diffLines(left, right);
+
+      hlLeft.innerHTML = renderFromParts(parts, 'left');
+      hlRight.innerHTML = renderFromParts(parts, 'right');
+
+      syncScroll(inLeft, hlLeft);
+      syncScroll(inRight, hlRight);
+    }
+
+    function syncScroll(input, highlight) {
+      highlight.scrollTop = input.scrollTop;
+      highlight.scrollLeft = input.scrollLeft;
+    }
+
+    inLeft.addEventListener('scroll',  () => syncScroll(inLeft, hlLeft));
+    inRight.addEventListener('scroll', () => syncScroll(inRight, hlRight));
+
+    for (const el of [inLeft, inRight]) {
+      el.addEventListener('input', scheduleUpdate);
+      el.addEventListener('paste', scheduleUpdate);
+
+      el.addEventListener('compositionstart', () => { composing = true; });
+      el.addEventListener('compositionend',   () => { composing = false; scheduleUpdate(); });
+    }
+
+    mode.addEventListener('change', scheduleUpdate);
+    normalizeEol.addEventListener('change', scheduleUpdate);
+    coalesceSpaces.addEventListener('change', scheduleUpdate);
+
+    clearBtn.addEventListener('click', () => {
+      inLeft.value = '';
+      inRight.value = '';
+      scheduleUpdate();
+      inLeft.focus();
+    });
+
+    updateDiff();
+  </script>
+</body>
+</html>
