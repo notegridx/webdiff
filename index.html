@@ -324,7 +324,7 @@
         <div class="title">webdiff</div>
 
         <div class="controls">
-            <label title="Auto は OS（ライト/ダーク）に追従します">
+            <label id="lbl-theme" title="Auto は OS（ライト/ダーク）に追従します">
                 <select id="theme">
                     <option value="auto" selected>Auto</option>
                     <option value="light">Light</option>
@@ -332,16 +332,16 @@
                 </select>
             </label>
 
-            <label title="CRLF/LFを統一して比較します">
+            <label id="lbl-eol" title="CRLF/LFを統一して比較します">
                 <input type="checkbox" id="normalizeEol" checked />
-                改行を正規化
+                <span id="txt-normalizeEol">改行を正規化</span>
             </label>
 
-            <button id="clear">両方クリア</button>
+            <button id="clear"><span id="txt-clear">両方クリア</span></button>
         </div>
     </header>
 
-    <div class="app-desc">2つのテキストを貼り付けて差分を比較（文字単位）</div>
+    <div class="app-desc" id="txt-desc">2つのテキストを貼り付けて差分を比較（文字単位）</div>
 
     <div class="wrap">
         <div class="grid">
@@ -376,6 +376,53 @@
     </footer>
 
     <script>
+        // ===== i18n (JA / EN) =====
+        function detectLang() {
+            const langs = (navigator.languages && navigator.languages.length)
+                ? navigator.languages
+                : [navigator.language || navigator.userLanguage || 'en'];
+            const primary = String(langs[0] || 'en').toLowerCase();
+            return primary.startsWith('ja') ? 'ja' : 'en';
+        }
+
+        function applyI18n(lang) {
+            document.documentElement.lang = lang;
+
+            const dict = {
+                ja: {
+                    desc: '2つのテキストを貼り付けて差分を比較（文字単位）',
+                    normalizeEol: '改行を正規化',
+                    clear: '両方クリア',
+                    themeTitle: 'Auto は OS（ライト/ダーク）に追従します',
+                    eolTitle: 'CRLF/LFを統一して比較します'
+                },
+                en: {
+                    desc: 'Paste two texts to compare differences (character-level).',
+                    normalizeEol: 'Normalize line endings',
+                    clear: 'Clear both',
+                    themeTitle: 'Auto follows your OS (light/dark) setting.',
+                    eolTitle: 'Compare after normalizing CRLF/LF.'
+                }
+            };
+
+            const t = dict[lang] || dict.en;
+
+            const elDesc = document.getElementById('txt-desc');
+            const elNormalize = document.getElementById('txt-normalizeEol');
+            const elClear = document.getElementById('txt-clear');
+            const lblTheme = document.getElementById('lbl-theme');
+            const lblEol = document.getElementById('lbl-eol');
+
+            if (elDesc) elDesc.textContent = t.desc;
+            if (elNormalize) elNormalize.textContent = t.normalizeEol;
+            if (elClear) elClear.textContent = t.clear;
+            if (lblTheme) lblTheme.title = t.themeTitle;
+            if (lblEol) lblEol.title = t.eolTitle;
+        }
+
+        const uiLang = detectLang();
+        applyI18n(uiLang);
+
         // ===== Theme (Auto / Light / Dark) =====
         const THEME_KEY = 'webdiff:theme'; // 'auto' | 'light' | 'dark'
         const themeSelect = document.getElementById('theme');
