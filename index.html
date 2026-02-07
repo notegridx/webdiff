@@ -337,11 +337,6 @@
                 改行を正規化
             </label>
 
-            <label title="スペースやタブが連続している部分を1つにまとめて比較します">
-                <input type="checkbox" id="coalesceSpaces" />
-                連続空白をまとめる
-            </label>
-
             <button id="clear">両方クリア</button>
         </div>
     </header>
@@ -420,7 +415,6 @@
         const lnRight = document.getElementById('ln-right');
 
         const normalizeEol = document.getElementById('normalizeEol');
-        const coalesceSpaces = document.getElementById('coalesceSpaces');
         const clearBtn = document.getElementById('clear');
 
         const TAB_SIZE = 4;
@@ -437,7 +431,6 @@
         function preprocess(text) {
             let t = text ?? '';
             if (normalizeEol.checked) t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-            if (coalesceSpaces.checked) t = t.replace(/[ \t]+/g, ' ');
             return t;
         }
 
@@ -529,7 +522,6 @@
         }
 
         normalizeEol.addEventListener('change', scheduleUpdate);
-        coalesceSpaces.addEventListener('change', scheduleUpdate);
 
         clearBtn.addEventListener('click', () => {
             inLeft.value = '';
