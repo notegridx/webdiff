@@ -177,6 +177,8 @@
             overflow-x: auto;
 
             background: transparent;
+
+            min-height: 60vh;
         }
 
         .highlight {
@@ -467,6 +469,23 @@
             scheduleUpdate();
             inLeft.focus();
         });
+
+        for (const editor of document.querySelectorAll('.editor')) {
+            editor.addEventListener('pointerdown', (e) => {
+
+                if (e.target && e.target.classList && e.target.classList.contains('input')) return;
+
+                const ta = editor.querySelector('.input');
+                if (!ta) return;
+
+                try {
+                    if (document.activeElement !== ta) ta.focus({ preventScroll: true });
+                } catch {
+                    ta.focus();
+                }
+            });
+        }
+
 
         updateDiff();
     </script>
