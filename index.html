@@ -474,7 +474,6 @@
             el.addEventListener('compositionend', () => { composing = false; scheduleUpdate(); });
         }
 
-        mode.addEventListener('change', scheduleUpdate);
         normalizeEol.addEventListener('change', scheduleUpdate);
         coalesceSpaces.addEventListener('change', scheduleUpdate);
 
