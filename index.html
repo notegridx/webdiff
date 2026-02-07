@@ -11,12 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
 
     <style>
-        /* ===== Theme tokens =====
-           We apply theme by setting: <html data-theme="light|dark">
-           Auto mode (OS follow) is handled by JS at startup and on OS change.
-        */
         :root {
-            /* Light */
             --bg: #f4f6f8;
             --panel: #ffffff;
             --border: #c8d1dc;
@@ -41,7 +36,6 @@
         }
 
         html[data-theme="dark"] {
-            /* Dark (solid + readable) */
             --bg: #0b0d12;
             --panel: #121623;
             --border: #2a3147;
@@ -62,7 +56,6 @@
             --shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.35);
         }
 
-        /* Let native controls match the current theme */
         html[data-theme="light"] { color-scheme: light; }
         html[data-theme="dark"] { color-scheme: dark; }
 
@@ -120,7 +113,6 @@
             white-space: nowrap;
         }
 
-        /* ===== Controls ===== */
         .controls select,
         .controls button {
             appearance: none;
@@ -158,9 +150,7 @@
             background: color-mix(in oklab, var(--panel), var(--text) 3%);
         }
 
-        .controls button:active {
-            transform: translateY(1px);
-        }
+        .controls button:active { transform: translateY(1px); }
 
         .controls select:focus-visible,
         .controls button:focus-visible,
@@ -169,15 +159,17 @@
             outline-offset: 2px;
         }
 
-        /* Toggle button (slightly emphasized but still minimal) */
         #modeToggle[data-mode="chars"] {
             border-color: color-mix(in oklab, var(--accent), var(--border) 40%);
             box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent), transparent 65%);
         }
 
-        .wrap {
-            padding: 12px 14px 16px;
+        #modeToggle {
+            min-width: 128px;
+            text-align: center;
         }
+
+        .wrap { padding: 12px 14px 16px; }
 
         .grid {
             display: grid;
@@ -196,15 +188,45 @@
             flex-direction: column;
         }
 
-        /* ===== Inline highlight editor (auto-grow) ===== */
+        /* ===== Editor ===== */
         .editor {
             display: grid;
+            grid-template-columns: 44px 1fr;
             position: relative;
         }
 
-        #modeToggle {
-            min-width: 128px;
-            text-align: center;
+        .lines {
+            padding: 12px 6px 14px;
+            border-right: 1px solid var(--border);
+            text-align: right;
+
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.55;
+
+            color: var(--muted);
+            user-select: none;
+            white-space: pre;
+
+            background: color-mix(in oklab, var(--panel), var(--text) 1%);
+            opacity: 0.9;
+
+            /* scroll sync */
+            overflow: hidden;
+        }
+
+        html[data-theme="dark"] .lines { opacity: 0.75; }
+
+        .lines span {
+            display: block;
+            line-height: 1.55em;
+        }
+
+        /* IMPORTANT: overlay container must be grid so grid-area works */
+        .pane {
+            display: grid;
+            position: relative;
+            min-width: 0; /* allow horizontal scroll inside */
         }
 
         .highlight,
@@ -227,7 +249,6 @@
             overflow-x: auto;
 
             background: transparent;
-
             min-height: 60vh;
         }
 
@@ -249,23 +270,11 @@
             z-index: 1;
         }
 
-        .input::selection {
-            background: var(--focus);
-        }
+        .input::selection { background: var(--focus); }
 
-        .same {
-            background: var(--same-bg);
-        }
-
-        .add {
-            background: var(--add-bg);
-            box-shadow: inset 2px 0 0 var(--add-bd);
-        }
-
-        .del {
-            background: var(--del-bg);
-            box-shadow: inset 2px 0 0 var(--del-bd);
-        }
+        .same { background: var(--same-bg); }
+        .add { background: var(--add-bg); box-shadow: inset 2px 0 0 var(--add-bd); }
+        .del { background: var(--del-bg); box-shadow: inset 2px 0 0 var(--del-bd); }
 
         .footer {
             padding: 10px 14px 14px;
@@ -278,9 +287,7 @@
             text-decoration: none;
         }
 
-        .footer a:hover {
-            text-decoration: underline;
-        }
+        .footer a:hover { text-decoration: underline; }
 
         @media (max-width: 980px) {
             .grid { grid-template-columns: 1fr; }
@@ -321,25 +328,29 @@
         </div>
     </header>
 
-    <div class="app-desc">
-        2つのテキストを貼り付けて差分を比較
-    </div>
+    <div class="app-desc">2つのテキストを貼り付けて差分を比較</div>
 
     <div class="wrap">
         <div class="grid">
             <section class="col">
                 <div class="editor">
-                    <pre class="highlight" id="hl-left"></pre>
-                    <textarea class="input" id="in-left" spellcheck="false" autocomplete="off"
-                        autocapitalize="off"></textarea>
+                    <div class="lines" id="ln-left"></div>
+                    <div class="pane">
+                        <pre class="highlight" id="hl-left"></pre>
+                        <textarea class="input" id="in-left" spellcheck="false" autocomplete="off"
+                            autocapitalize="off"></textarea>
+                    </div>
                 </div>
             </section>
 
             <section class="col">
                 <div class="editor">
-                    <pre class="highlight" id="hl-right"></pre>
-                    <textarea class="input" id="in-right" spellcheck="false" autocomplete="off"
-                        autocapitalize="off"></textarea>
+                    <div class="lines" id="ln-right"></div>
+                    <div class="pane">
+                        <pre class="highlight" id="hl-right"></pre>
+                        <textarea class="input" id="in-right" spellcheck="false" autocomplete="off"
+                            autocapitalize="off"></textarea>
+                    </div>
                 </div>
             </section>
         </div>
@@ -358,16 +369,10 @@
         const mql = window.matchMedia('(prefers-color-scheme: dark)');
 
         function applyTheme(mode) {
-            // mode: 'auto' | 'light' | 'dark'
             const html = document.documentElement;
-            if (mode === 'light') {
-                html.setAttribute('data-theme', 'light');
-            } else if (mode === 'dark') {
-                html.setAttribute('data-theme', 'dark');
-            } else {
-                // auto
-                html.setAttribute('data-theme', mql.matches ? 'dark' : 'light');
-            }
+            if (mode === 'light') html.setAttribute('data-theme', 'light');
+            else if (mode === 'dark') html.setAttribute('data-theme', 'dark');
+            else html.setAttribute('data-theme', mql.matches ? 'dark' : 'light');
         }
 
         function loadTheme() {
@@ -382,14 +387,10 @@
             applyTheme(mode);
         }
 
-        // OS theme change -> reflect only when Auto
         mql.addEventListener('change', () => {
             if (themeSelect.value === 'auto') applyTheme('auto');
         });
-
         themeSelect.addEventListener('change', () => saveTheme(themeSelect.value));
-
-        // Initialize theme ASAP
         loadTheme();
 
         // ===== Diff App =====
@@ -397,13 +398,14 @@
         const inRight = document.getElementById('in-right');
         const hlLeft = document.getElementById('hl-left');
         const hlRight = document.getElementById('hl-right');
+        const lnLeft = document.getElementById('ln-left');
+        const lnRight = document.getElementById('ln-right');
 
         const modeToggle = document.getElementById('modeToggle');
         const normalizeEol = document.getElementById('normalizeEol');
         const coalesceSpaces = document.getElementById('coalesceSpaces');
         const clearBtn = document.getElementById('clear');
 
-        // CSS tab-size と合わせる
         const TAB_SIZE = 4;
 
         function escapeHtml(s) {
@@ -420,43 +422,25 @@
         }
 
         modeToggle.addEventListener('click', () => {
-            const current = getMode();
-            const next = current === 'lines' ? 'chars' : 'lines';
-
+            const next = getMode() === 'lines' ? 'chars' : 'lines';
             modeToggle.dataset.mode = next;
             modeToggle.textContent = next === 'lines' ? '文字単位に変更' : '行単位に変更';
-
             scheduleUpdate();
         });
 
         function preprocess(text) {
             let t = text ?? '';
-            if (normalizeEol.checked) {
-                t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-            }
-            if (coalesceSpaces.checked) {
-                t = t.replace(/[ \t]+/g, ' ');
-            }
+            if (normalizeEol.checked) t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            if (coalesceSpaces.checked) t = t.replace(/[ \t]+/g, ' ');
             return t;
         }
 
-        // 行頭の空白/タブだけを潰れないように &nbsp; 化して、改行は <br> にする
         function chunkToHtmlPreserveIndent(chunk) {
             let s = escapeHtml(chunk);
-
-            // タブをスペースに展開（&nbsp;化と整合）
             s = s.replace(/\t/g, ' '.repeat(TAB_SIZE));
-
-            // 行頭の連続スペースを &nbsp; に（行頭だけ）
-            // (^|<br>) の直後のスペース列を対象にする
             s = s.replace(/(^|<br>)( +)/g, (m, p1, p2) => p1 + p2.replace(/ /g, '&nbsp;'));
-
-            // 改行を <br> に
             s = s.replace(/\n/g, '<br>');
-
-            // 末尾が改行で終わる場合の「最後の空行」を可視化
             if (s.endsWith('<br>')) s += '&nbsp;';
-
             if (s.length === 0) s = '&nbsp;';
             return s;
         }
@@ -467,7 +451,6 @@
                 const isAdd = !!p.added;
                 const isDel = !!p.removed;
 
-                // left: additions hide, right: deletions hide
                 if (side === 'left' && isAdd) continue;
                 if (side === 'right' && isDel) continue;
 
@@ -477,11 +460,25 @@
             return html || '<span class="same">&nbsp;</span>';
         }
 
-        function autoGrow(inputEl, highlightEl) {
+        function autoGrow(inputEl, highlightEl, linesEl) {
             inputEl.style.height = 'auto';
             const h = inputEl.scrollHeight;
             inputEl.style.height = h + 'px';
             highlightEl.style.height = h + 'px';
+            linesEl.style.height = h + 'px';
+        }
+
+        function buildLineNumbers(text) {
+            const lines = text.split('\n').length;
+            let html = '';
+            for (let i = 1; i <= lines; i++) html += `<span>${i}</span>`;
+            return html;
+        }
+
+        function syncScroll(input, highlight, lines) {
+            highlight.scrollTop = input.scrollTop;
+            highlight.scrollLeft = input.scrollLeft;
+            lines.scrollTop = input.scrollTop;
         }
 
         // ---- Diff + Render (debounced, IME-safe) ----
@@ -498,34 +495,29 @@
             const left = preprocess(inLeft.value);
             const right = preprocess(inRight.value);
 
-            const modeValue = getMode();
-            const parts = (modeValue === 'chars')
+            lnLeft.innerHTML = buildLineNumbers(left);
+            lnRight.innerHTML = buildLineNumbers(right);
+
+            const parts = (getMode() === 'chars')
                 ? Diff.diffChars(left, right)
                 : Diff.diffLines(left, right);
 
             hlLeft.innerHTML = renderFromParts(parts, 'left');
             hlRight.innerHTML = renderFromParts(parts, 'right');
 
-            // auto-grow after rendering
-            autoGrow(inLeft, hlLeft);
-            autoGrow(inRight, hlRight);
+            autoGrow(inLeft, hlLeft, lnLeft);
+            autoGrow(inRight, hlRight, lnRight);
 
-            // sync horizontal scroll only
-            syncScroll(inLeft, hlLeft);
-            syncScroll(inRight, hlRight);
+            syncScroll(inLeft, hlLeft, lnLeft);
+            syncScroll(inRight, hlRight, lnRight);
         }
 
-        function syncScroll(input, highlight) {
-            highlight.scrollLeft = input.scrollLeft;
-        }
-
-        inLeft.addEventListener('scroll', () => syncScroll(inLeft, hlLeft));
-        inRight.addEventListener('scroll', () => syncScroll(inRight, hlRight));
+        inLeft.addEventListener('scroll', () => syncScroll(inLeft, hlLeft, lnLeft));
+        inRight.addEventListener('scroll', () => syncScroll(inRight, hlRight, lnRight));
 
         for (const el of [inLeft, inRight]) {
             el.addEventListener('input', scheduleUpdate);
             el.addEventListener('paste', scheduleUpdate);
-
             el.addEventListener('compositionstart', () => { composing = true; });
             el.addEventListener('compositionend', () => { composing = false; scheduleUpdate(); });
         }
@@ -540,18 +532,14 @@
             inLeft.focus();
         });
 
+        // click editor area -> focus textarea (still works with line-number lane)
         for (const editor of document.querySelectorAll('.editor')) {
             editor.addEventListener('pointerdown', (e) => {
-                if (e.target && e.target.classList && e.target.classList.contains('input')) return;
-
+                if (e.target?.classList?.contains('input')) return;
                 const ta = editor.querySelector('.input');
                 if (!ta) return;
-
-                try {
-                    if (document.activeElement !== ta) ta.focus({ preventScroll: true });
-                } catch {
-                    ta.focus();
-                }
+                try { if (document.activeElement !== ta) ta.focus({ preventScroll: true }); }
+                catch { ta.focus(); }
             });
         }
 
