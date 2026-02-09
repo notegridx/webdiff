@@ -267,6 +267,7 @@ html[data-theme="dark"] .lines {
 
 .same {
   background: var(--same-bg);
+  box-shadow: inset 2px 0 0 transparent; /* ←追加：左端2pxを常に確保（見えない） */
 }
 
 .add {
