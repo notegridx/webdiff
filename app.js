@@ -108,8 +108,9 @@ function chunkToHtmlPreserveIndent(chunk) {
   s = s.replace(/\t/g, ' '.repeat(TAB_SIZE));
   s = s.replace(/(^|<br>)( +)/g, (m, p1, p2) => p1 + p2.replace(/ /g, '&nbsp;'));
   s = s.replace(/\n/g, '<br>');
-  if (s.endsWith('<br>')) s += '&nbsp;';
-  if (s.length === 0) s = '&nbsp;';
+  // keep empty line height without adding visible width
+  if (s.endsWith('<br>')) s += '&#8203;';   // zero-width space
+  if (s.length === 0) s = '&#8203;';
   return s;
 }
 
